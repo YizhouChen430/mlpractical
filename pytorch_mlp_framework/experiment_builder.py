@@ -10,7 +10,9 @@ import time
 from pytorch_mlp_framework.storage_utils import save_statistics
 from matplotlib import pyplot as plt
 import matplotlib
+
 matplotlib.rcParams.update({'font.size': 8})
+
 
 class ExperimentBuilder(nn.Module):
     def __init__(self, network_model, experiment_name, num_epochs, train_data, val_data,
@@ -32,7 +34,6 @@ class ExperimentBuilder(nn.Module):
         """
         super(ExperimentBuilder, self).__init__()
 
-
         self.experiment_name = experiment_name
         self.model = network_model
 
@@ -42,7 +43,7 @@ class ExperimentBuilder(nn.Module):
             self.model = nn.DataParallel(module=self.model)
             print('Use Multi GPU', self.device)
         elif torch.cuda.device_count() == 1 and use_gpu:
-            self.device =  torch.cuda.current_device()
+            self.device = torch.cuda.current_device()
             self.model.to(self.device)  # sends the model from the cpu to the gpu
             print('Use GPU', self.device)
         else:
@@ -121,10 +122,8 @@ class ExperimentBuilder(nn.Module):
 
         return total_num_params
 
+    def plot_func_def(self, all_grads, layers):
 
-    def plot_func_def(self,all_grads, layers):
-        
-       
         """
         Plot function definition to plot the average gradient with respect to the number of layers in the given model
         :param all_grads: Gradients wrt weights for each layer in the model.
@@ -132,18 +131,17 @@ class ExperimentBuilder(nn.Module):
         :return: plot for gradient flow
         """
         plt.plot(all_grads, alpha=0.3, color="b")
-        plt.hlines(0, 0, len(all_grads)+1, linewidth=1, color="k" )
-        plt.xticks(range(0,len(all_grads), 1), layers, rotation="vertical")
+        plt.hlines(0, 0, len(all_grads) + 1, linewidth=1, color="k")
+        plt.xticks(range(0, len(all_grads), 1), layers, rotation="vertical")
         plt.xlim(xmin=0, xmax=len(all_grads))
         plt.xlabel("Layers")
         plt.ylabel("Average Gradient")
         plt.title("Gradient flow")
         plt.grid(True)
         plt.tight_layout()
-        
+
         return plt
-        
-    
+
     def plot_grad_flow(self, named_parameters):
         """
         The function is being called in Line 298 of this file. 
@@ -154,7 +152,7 @@ class ExperimentBuilder(nn.Module):
         conv_grads = []
         layers = []
         conv_layers = []
-        
+
         """
         Complete the code in the block below to collect absolute mean of the gradients for each layer in all_grads with the layer names in layers.
         """
@@ -168,33 +166,29 @@ class ExperimentBuilder(nn.Module):
                     name = layer_splits[1] + '_' + layer_splits[3]
                 layers.append(name)
                 all_grads.append(torch.mean(torch.abs(param.grad)))
-                if not 'bn' in layer:
+                if 'bn' not in layer:
                     conv_layers.append(name)
                     conv_grads.append(torch.mean(torch.abs(param.grad)))
-        
+
         ########################################
 
         plt_full = self.plot_func_def(all_grads, layers)
         plt_conv = self.plot_func_def(conv_grads, conv_layers)
-        
+
         return plt_full, plt_conv
-    
-    
-    
-    
+
     def run_train_iter(self, x, y):
-        
+
         self.train()  # sets model to training mode (in case batch normalization or other methods have different procedures for training and evaluation)
         x, y = x.float().to(device=self.device), y.long().to(
             device=self.device)  # send data to device as torch tensors
         out = self.model.forward(x)  # forward the data in the model
 
-
         loss = F.cross_entropy(input=out, target=y)  # compute loss
 
         self.optimizer.zero_grad()  # set all weight grads from previous training iters to 0
         loss.backward()  # backpropagate to compute gradients for current iter loss
-        
+
         self.learning_rate_scheduler.step(epoch=self.current_epoch)
         self.optimizer.step()  # update network parameters
         _, predicted = torch.max(out.data, 1)  # get argmax of predictions
@@ -286,7 +280,8 @@ class ExperimentBuilder(nn.Module):
 
             save_statistics(experiment_log_dir=self.experiment_logs, filename='summary.csv',
                             stats_dict=total_losses, current_epoch=i,
-                            continue_from_mode=True if (self.starting_epoch != 0 or i > 0) else False)  # save statistics to stats file.
+                            continue_from_mode=True if (
+                                        self.starting_epoch != 0 or i > 0) else False)  # save statistics to stats file.
 
             # load_statistics(experiment_log_dir=self.experiment_logs, filename='summary.csv') # How to load a csv file if you need to
 
@@ -307,7 +302,7 @@ class ExperimentBuilder(nn.Module):
                             model_save_name="train_model", model_idx='latest',
                             best_validation_model_idx=self.best_val_model_idx,
                             best_validation_model_acc=self.best_val_model_acc)
-            
+
             ################################################################
             ##### Plot Gradient Flow at each Epoch during Training  ######
             print("Generating Gradient Flow Plot at epoch {}".format(epoch_idx))
@@ -318,10 +313,12 @@ class ExperimentBuilder(nn.Module):
             if not os.path.exists(os.path.join(self.experiment_saved_models, 'gradient_flow_plots_conv')):
                 os.mkdir(os.path.join(self.experiment_saved_models, 'gradient_flow_plots_conv'))
                 #
-            plt_full.savefig(os.path.join(self.experiment_saved_models, 'gradient_flow_plots', "epoch{}.pdf".format(str(epoch_idx))))
-            plt_conv.savefig(os.path.join(self.experiment_saved_models, 'gradient_flow_plots_conv', "epoch{}.pdf".format(str(epoch_idx))))
+            plt_full.savefig(
+                os.path.join(self.experiment_saved_models, 'gradient_flow_plots', "epoch{}.pdf".format(str(epoch_idx))))
+            plt_conv.savefig(os.path.join(self.experiment_saved_models, 'gradient_flow_plots_conv',
+                                          "epoch{}.pdf".format(str(epoch_idx))))
             ################################################################
-        
+
         print("Generating test set evaluation metrics")
         self.load_model(model_save_dir=self.experiment_saved_models, model_idx=self.best_val_model_idx,
                         # load best validation model
