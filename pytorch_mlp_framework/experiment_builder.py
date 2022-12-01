@@ -170,7 +170,7 @@ class ExperimentBuilder(nn.Module):
         plt_full = self.plot_func_def(all_grads, layers)
         return plt_full
 
-    def plot_grad_flow(self, named_parameters):
+    def plot_grad_flow_conv(self, named_parameters):
         """
         The function is being called in Line 298 of this file.
         Receives the parameters of the model being trained. Returns plot of gradient flow for the given model parameters.
