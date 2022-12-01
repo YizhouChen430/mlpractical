@@ -151,7 +151,9 @@ class ExperimentBuilder(nn.Module):
        
         """
         all_grads = []
+        conv_grads = []
         layers = []
+        conv_layers = []
         
         """
         Complete the code in the block below to collect absolute mean of the gradients for each layer in all_grads with the layer names in layers.
@@ -166,12 +168,16 @@ class ExperimentBuilder(nn.Module):
                     name = layer_splits[1] + '_' + layer_splits[3]
                 layers.append(name)
                 all_grads.append(torch.mean(torch.abs(param.grad)))
+                if not 'bn' in layer_splits[3]:
+                    conv_layers.append(name)
+                    conv_grads.append(torch.mean(torch.abs(param.grad)))
         
         ########################################
 
-        plt = self.plot_func_def(all_grads, layers)
+        plt_full = self.plot_func_def(all_grads, layers)
+        plt_conv = self.plot_func_def(conv_grads, conv_layers)
         
-        return plt
+        return plt_full, plt_conv
     
     
     
@@ -305,11 +311,15 @@ class ExperimentBuilder(nn.Module):
             ################################################################
             ##### Plot Gradient Flow at each Epoch during Training  ######
             print("Generating Gradient Flow Plot at epoch {}".format(epoch_idx))
-            plt = self.plot_grad_flow(self.model.named_parameters())
+            plt_full, plt_conv = self.plot_grad_flow(self.model.named_parameters())
             if not os.path.exists(os.path.join(self.experiment_saved_models, 'gradient_flow_plots')):
                 os.mkdir(os.path.join(self.experiment_saved_models, 'gradient_flow_plots'))
                 # plt.legend(loc="best")
-            plt.savefig(os.path.join(self.experiment_saved_models, 'gradient_flow_plots', "epoch{}.pdf".format(str(epoch_idx))))
+            if not os.path.exists(os.path.join(self.experiment_saved_models, 'gradient_flow_plots_conv')):
+                os.mkdir(os.path.join(self.experiment_saved_models, 'gradient_flow_plots_conv'))
+                #
+            plt_full.savefig(os.path.join(self.experiment_saved_models, 'gradient_flow_plots', "epoch{}.pdf".format(str(epoch_idx))))
+            plt_conv.savefig(os.path.join(self.experiment_saved_models, 'gradient_flow_plots_conv', "epoch{}.pdf".format(str(epoch_idx))))
             ################################################################
         
         print("Generating test set evaluation metrics")
