@@ -168,7 +168,7 @@ class ExperimentBuilder(nn.Module):
                     name = layer_splits[1] + '_' + layer_splits[3]
                 layers.append(name)
                 all_grads.append(torch.mean(torch.abs(param.grad)))
-                if not 'bn' in layer_splits[3]:
+                if not 'bn' in layer:
                     conv_layers.append(name)
                     conv_grads.append(torch.mean(torch.abs(param.grad)))
         
